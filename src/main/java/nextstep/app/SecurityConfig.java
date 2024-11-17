@@ -2,6 +2,7 @@ package nextstep.app;
 
 import nextstep.app.domain.Member;
 import nextstep.app.domain.MemberRepository;
+import nextstep.oauth2.GithubLoginRedirectFilter;
 import nextstep.security.access.AnyRequestMatcher;
 import nextstep.security.access.MvcRequestMatcher;
 import nextstep.security.access.RequestMatcherEntry;
@@ -59,6 +60,7 @@ public class SecurityConfig {
                         new SecurityContextHolderFilter(),
                         new UsernamePasswordAuthenticationFilter(userDetailsService()),
                         new BasicAuthenticationFilter(userDetailsService()),
+                        new GithubLoginRedirectFilter(),
                         new AuthorizationFilter(requestAuthorizationManager())
                 )
         );
