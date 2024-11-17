@@ -1,26 +1,16 @@
-package nextstep.oauth2.github;
+package nextstep.oauth2;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import nextstep.oauth2.OAuth2ProfileUser;
+import java.util.Map;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class GithubProfileUser implements OAuth2ProfileUser {
-    @JsonProperty("id")
-    private String id;
-
-    @JsonProperty("name")
     private String name;
-
-    @JsonProperty("avatar_url")
     private String imageUrl;
-
-    @JsonProperty("email")
     private String email;
 
-    @Override
-    public String getId() {
-        return id;
+    public GithubProfileUser(Map<String, Object> attributes) {
+        this.name = attributes.get("name").toString();
+        this.imageUrl = attributes.get("avatar_url").toString();
+        this.email = attributes.get("email").toString();
     }
 
     @Override

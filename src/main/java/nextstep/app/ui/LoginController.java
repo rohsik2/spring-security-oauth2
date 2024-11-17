@@ -4,7 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-//import nextstep.oauth2.userinfo.OAuth2User;
+import nextstep.oauth2.userinfo.OAuth2User;
 import nextstep.security.authentication.Authentication;
 import nextstep.security.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -33,10 +33,10 @@ public class LoginController {
         if (authentication.getPrincipal() instanceof String) {
             return (String) authentication.getPrincipal();
         }
-//        if (authentication.getPrincipal() instanceof OAuth2User) {
-//            String userNameAttributeName = ((OAuth2User) authentication.getPrincipal()).getUserNameAttributeName();
-//            return (String) ((OAuth2User) authentication.getPrincipal()).getAttributes().get(userNameAttributeName);
-//        }
+        if (authentication.getPrincipal() instanceof OAuth2User) {
+            String userNameAttributeName = ((OAuth2User) authentication.getPrincipal()).getUserNameAttributeName();
+            return (String) ((OAuth2User) authentication.getPrincipal()).getAttributes().get(userNameAttributeName);
+        }
         return "";
     }
 

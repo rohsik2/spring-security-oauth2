@@ -1,16 +1,16 @@
 package nextstep.app;
 
-import nextstep.app.domain.Member;
-import nextstep.app.domain.MemberRepository;
 import nextstep.oauth2.OAuth2ClientProperties;
-import nextstep.oauth2.Oauth2AuthenticationFilter;
-import nextstep.oauth2.Oauth2LoginRedirectFilter;
+import nextstep.oauth2.registration.ClientRegistration;
+import nextstep.oauth2.registration.ClientRegistrationRepository;
+import nextstep.oauth2.userinfo.OAuth2UserService;
+import nextstep.oauth2.web.OAuth2AuthorizationRequestRedirectFilter;
+import nextstep.oauth2.web.OAuth2LoginAuthenticationFilter;
 import nextstep.security.access.AnyRequestMatcher;
 import nextstep.security.access.MvcRequestMatcher;
 import nextstep.security.access.RequestMatcherEntry;
 import nextstep.security.access.hierarchicalroles.RoleHierarchy;
 import nextstep.security.access.hierarchicalroles.RoleHierarchyImpl;
-import nextstep.security.authentication.AuthenticationException;
 import nextstep.security.authentication.BasicAuthenticationFilter;
 import nextstep.security.authentication.UsernamePasswordAuthenticationFilter;
 import nextstep.security.authorization.*;
@@ -19,7 +19,6 @@ import nextstep.security.config.DelegatingFilterProxy;
 import nextstep.security.config.FilterChainProxy;
 import nextstep.security.config.SecurityFilterChain;
 import nextstep.security.context.SecurityContextHolderFilter;
-import nextstep.security.userdetails.UserDetails;
 import nextstep.security.userdetails.UserDetailsService;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,19 +27,23 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.http.HttpMethod;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+
 
 @Configuration
 @EnableAspectJAutoProxy
 @EnableConfigurationProperties(OAuth2ClientProperties.class)
 public class SecurityConfig {
 
-    private final MemberRepository memberRepository;
+    private final UserDetailsService userDetailsService;
+    private final OAuth2UserService oAuth2UserService;
     private final OAuth2ClientProperties oAuth2ClientProperties;
 
-    public SecurityConfig(MemberRepository memberRepository, nextstep.oauth2.OAuth2ClientProperties oAuth2ClientProperties) {
-        this.memberRepository = memberRepository;
+    public SecurityConfig(UserDetailsService userDetailsService, OAuth2UserService oAuth2UserService, OAuth2ClientProperties oAuth2ClientProperties) {
+        this.userDetailsService = userDetailsService;
+        this.oAuth2UserService = oAuth2UserService;
         this.oAuth2ClientProperties = oAuth2ClientProperties;
     }
 
@@ -60,20 +63,6 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain() {
-        return new DefaultSecurityFilterChain(
-                List.of(
-                        new SecurityContextHolderFilter(),
-                        new UsernamePasswordAuthenticationFilter(userDetailsService()),
-                        new BasicAuthenticationFilter(userDetailsService()),
-                        new Oauth2LoginRedirectFilter(oAuth2ClientProperties),
-                        new Oauth2AuthenticationFilter(oAuth2ClientProperties),
-                        new AuthorizationFilter(requestAuthorizationManager())
-                )
-        );
-    }
-
-    @Bean
     public RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.with()
                 .role("ADMIN").implies("USER")
@@ -81,37 +70,44 @@ public class SecurityConfig {
     }
 
     @Bean
+    public SecurityFilterChain securityFilterChain() {
+        return new DefaultSecurityFilterChain(
+                List.of(
+                        new SecurityContextHolderFilter(),
+                        new UsernamePasswordAuthenticationFilter(userDetailsService),
+                        new BasicAuthenticationFilter(userDetailsService),
+                        new OAuth2AuthorizationRequestRedirectFilter(clientRegistrationRepository()),
+                        new OAuth2LoginAuthenticationFilter(clientRegistrationRepository(), oAuth2UserService),
+                        new AuthorizationFilter(requestAuthorizationManager())
+                )
+        );
+    }
+
+    @Bean
     public RequestAuthorizationManager requestAuthorizationManager() {
         List<RequestMatcherEntry<AuthorizationManager>> mappings = new ArrayList<>();
         mappings.add(new RequestMatcherEntry<>(new MvcRequestMatcher(HttpMethod.GET, "/members"), new AuthorityAuthorizationManager(roleHierarchy(), "ADMIN")));
         mappings.add(new RequestMatcherEntry<>(new MvcRequestMatcher(HttpMethod.GET, "/members/me"), new AuthorityAuthorizationManager(roleHierarchy(), "USER")));
-        mappings.add(new RequestMatcherEntry<>(new MvcRequestMatcher(HttpMethod.GET, "/search"), new PermitAllAuthorizationManager()));
-        mappings.add(new RequestMatcherEntry<>(AnyRequestMatcher.INSTANCE, new PermitAllAuthorizationManager()));
+        mappings.add(new RequestMatcherEntry<>(AnyRequestMatcher.INSTANCE, new PermitAllAuthorizationManager<Void>()));
         return new RequestAuthorizationManager(mappings);
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> {
-            Member member = memberRepository.findByEmail(username)
-                    .orElseThrow(() -> new AuthenticationException("존재하지 않는 사용자입니다."));
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        Map<String, ClientRegistration> registrations = getClientRegistrations(oAuth2ClientProperties);
+        return new ClientRegistrationRepository(registrations);
+    }
 
-            return new UserDetails() {
-                @Override
-                public String getUsername() {
-                    return member.getEmail();
-                }
+    private static Map<String, ClientRegistration> getClientRegistrations(OAuth2ClientProperties properties) {
+        Map<String, ClientRegistration> clientRegistrations = new HashMap<>();
+        properties.getRegistration().forEach((key, value) -> clientRegistrations.put(key,
+                getClientRegistration(key, value, properties.getProvider().get(key))));
+        return clientRegistrations;
+    }
 
-                @Override
-                public String getPassword() {
-                    return member.getPassword();
-                }
-
-                @Override
-                public Set<String> getAuthorities() {
-                    return member.getRoles();
-                }
-            };
-        };
+    private static ClientRegistration getClientRegistration(String registrationId,
+                                                            OAuth2ClientProperties.Registration registration, OAuth2ClientProperties.Provider provider) {
+        return new ClientRegistration(registrationId, registration.getClientId(), registration.getClientSecret(), registration.getRedirectUri(), registration.getScope(), provider.getAuthorizationUri(), provider.getTokenUri(), provider.getUserInfoUri(), provider.getUserNameAttributeName());
     }
 }
+

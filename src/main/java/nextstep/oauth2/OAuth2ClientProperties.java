@@ -74,6 +74,7 @@ public class OAuth2ClientProperties {
         private String authorizationUri;
         private String tokenUri;
         private String userInfoUri;
+        private String userNameAttributeName;
 
         public String getAuthorizationUri() {
             return this.authorizationUri;
@@ -99,5 +100,12 @@ public class OAuth2ClientProperties {
             this.userInfoUri = userInfoUri;
         }
 
+        public String getUserNameAttributeName() {
+            return userNameAttributeName;
+        }
+
+        public void setUserNameAttributeName(String userNameAttributeName) {
+            this.userNameAttributeName = userNameAttributeName;
+        }
     }
 }

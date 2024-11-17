@@ -1,26 +1,16 @@
-package nextstep.oauth2.google;
+package nextstep.oauth2;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import nextstep.oauth2.OAuth2ProfileUser;
+import java.util.Map;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class GoogleProfileUser implements OAuth2ProfileUser {
-    @JsonProperty("id")
-    private String id;
-
-    @JsonProperty("name")
     private String name;
-
-    @JsonProperty("picture")
     private String imageUrl;
-
-    @JsonProperty("email")
     private String email;
 
-    @Override
-    public String getId() {
-        return id;
+    public GoogleProfileUser(Map<String, Object> attributes) {
+        this.name = attributes.get("name").toString();
+        this.imageUrl = attributes.get("picture").toString();
+        this.email = attributes.get("email").toString();
     }
 
     @Override
