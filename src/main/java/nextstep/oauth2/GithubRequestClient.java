@@ -8,8 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GithubRequestClient {
-    private static final String GITHUB_TOKEN_URL = "http://localhost:8089/login/oauth/access_token";
-    public static final String GITHUB_PROFILE_URL = "http://localhost:8089/user";
+    private static final String GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
+    public static final String GITHUB_PROFILE_URL = "https://api.github.com/user";
+//    private static final String GITHUB_TOKEN_URL = "http://localhost:8089/login/oauth/access_token";
+//    public static final String GITHUB_PROFILE_URL = "http://localhost:8089/user";
     private final RestTemplate restTemplate = new RestTemplate();
 
     public String requestAccessToken(String code) {
@@ -18,7 +20,7 @@ public class GithubRequestClient {
 
         Map<String, String> body = new HashMap<>();
         body.put("client_id", "Ov23liTBhugSIcf8VX1v");
-        body.put("client_secret", "your_client_secret");
+        body.put("client_secret", "your_client_secret"); // TODO: client_secret을 작성해주세요.
         body.put("code", code);
         body.put("redirect_uri", GithubLoginRedirectFilter.REDIRECT_URI);
 
