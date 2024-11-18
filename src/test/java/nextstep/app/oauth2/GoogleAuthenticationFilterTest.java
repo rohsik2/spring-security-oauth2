@@ -49,22 +49,6 @@ class GoogleAuthenticationFilterTest {
     @ParameterizedTest
     @MethodSource("userProvider")
     void authenticationFilter(UserStub user) throws Exception {
-        String requestUri = "/login/oauth2/code/google?code=" + user.code;
-
-        mockMvc.perform(MockMvcRequestBuilders.get(requestUri))
-                .andDo(print())
-                .andExpect(MockMvcResultMatchers.status().is3xxRedirection())
-                .andExpect(MockMvcResultMatchers.redirectedUrl("/"));
-
-        Member savedMember = memberRepository.findByEmail(user.email).get();
-        assertThat(savedMember).isNotNull();
-        assertThat(savedMember.getEmail()).isEqualTo(user.email);
-        assertThat(savedMember.getName()).isEqualTo(user.name);
-    }
-
-    @ParameterizedTest
-    @MethodSource("userProvider")
-    void authenticationFilterWithState(UserStub user) throws Exception {
         MockHttpSession session = new MockHttpSession();
 
         String state = mockMvc.perform(MockMvcRequestBuilders.get("/oauth2/authorization/google").session(session))

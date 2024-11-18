@@ -1,16 +1,16 @@
 package nextstep.security.authorization;
 
-import nextstep.security.authentication.Authentication;
-import nextstep.security.authentication.AuthenticationException;
-import nextstep.security.context.SecurityContextHolder;
-import org.springframework.web.filter.GenericFilterBean;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import nextstep.security.authentication.Authentication;
+import nextstep.security.authentication.AuthenticationException;
+import nextstep.security.context.SecurityContextHolder;
+import org.springframework.web.filter.GenericFilterBean;
+
 import java.io.IOException;
 
 public class AuthorizationFilter extends GenericFilterBean {

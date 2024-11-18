@@ -2,8 +2,6 @@ package nextstep.app;
 
 import nextstep.app.domain.Member;
 import nextstep.app.infrastructure.InmemoryMemberRepository;
-import nextstep.security.authentication.Authentication;
-import nextstep.security.context.SecurityContextHolder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +14,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Base64;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

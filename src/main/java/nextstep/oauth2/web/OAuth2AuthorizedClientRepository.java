@@ -1,12 +1,12 @@
 package nextstep.oauth2.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import nextstep.oauth2.OAuth2AuthorizedClient;
 import nextstep.security.authentication.Authentication;
 import org.springframework.util.Assert;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,9 +17,8 @@ public class OAuth2AuthorizedClientRepository {
 
     private final String sessionAttributeName = DEFAULT_AUTHORIZED_CLIENTS_ATTR_NAME;
 
-    @SuppressWarnings("unchecked")
     public OAuth2AuthorizedClient loadAuthorizedClient(String clientRegistrationId,
-                                                                     Authentication principal, HttpServletRequest request) {
+                                                       Authentication principal, HttpServletRequest request) {
         Assert.hasText(clientRegistrationId, "clientRegistrationId cannot be empty");
         Assert.notNull(request, "request cannot be null");
         return this.getAuthorizedClients(request).get(clientRegistrationId);
@@ -44,8 +43,7 @@ public class OAuth2AuthorizedClientRepository {
             if (authorizedClients.remove(clientRegistrationId) != null) {
                 if (!authorizedClients.isEmpty()) {
                     request.getSession().setAttribute(this.sessionAttributeName, authorizedClients);
-                }
-                else {
+                } else {
                     request.getSession().removeAttribute(this.sessionAttributeName);
                 }
             }

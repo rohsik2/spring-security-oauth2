@@ -1,11 +1,10 @@
 package nextstep.oauth2.web;
 
-import nextstep.oauth2.endpoint.OAuth2AuthorizationRequest;
-import org.springframework.util.Assert;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import nextstep.oauth2.endpoint.OAuth2AuthorizationRequest;
+import org.springframework.util.Assert;
 
 public class AuthorizationRequestRepository {
 

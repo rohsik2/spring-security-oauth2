@@ -1,16 +1,16 @@
 package nextstep.security.authorization;
 
+import jakarta.servlet.http.HttpServletRequest;
 import nextstep.security.access.RequestMatcher;
 import nextstep.security.access.RequestMatcherEntry;
 import nextstep.security.authentication.Authentication;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
-public class RequestAuthorizationManager implements AuthorizationManager<HttpServletRequest> {
+public class RequestMatcherDelegatingAuthorizationManager implements AuthorizationManager<HttpServletRequest> {
     private final List<RequestMatcherEntry<AuthorizationManager>> mappings;
 
-    public RequestAuthorizationManager(List<RequestMatcherEntry<AuthorizationManager>> mappings) {
+    public RequestMatcherDelegatingAuthorizationManager(List<RequestMatcherEntry<AuthorizationManager>> mappings) {
         this.mappings = mappings;
     }
 

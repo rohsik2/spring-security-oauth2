@@ -1,9 +1,10 @@
 package nextstep.oauth2.web;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import nextstep.oauth2.OAuth2AuthenticationException;
 import nextstep.oauth2.OAuth2AuthorizedClient;
 import nextstep.oauth2.authentication.OAuth2AuthenticationToken;
-import nextstep.oauth2.authentication.OAuth2LoginAuthenticationProvider;
 import nextstep.oauth2.authentication.OAuth2LoginAuthenticationToken;
 import nextstep.oauth2.endpoint.OAuth2AuthorizationExchange;
 import nextstep.oauth2.endpoint.OAuth2AuthorizationRequest;
@@ -11,70 +12,32 @@ import nextstep.oauth2.endpoint.OAuth2AuthorizationResponse;
 import nextstep.oauth2.endpoint.OAuth2AuthorizationResponseUtils;
 import nextstep.oauth2.registration.ClientRegistration;
 import nextstep.oauth2.registration.ClientRegistrationRepository;
-import nextstep.oauth2.userinfo.OAuth2UserService;
+import nextstep.security.authentication.AbstractAuthenticationProcessingFilter;
 import nextstep.security.authentication.Authentication;
-import nextstep.security.authentication.AuthenticationException;
 import nextstep.security.authentication.AuthenticationManager;
-import nextstep.security.authentication.ProviderManager;
-import nextstep.security.context.HttpSessionSecurityContextRepository;
-import nextstep.security.context.SecurityContext;
-import nextstep.security.context.SecurityContextHolder;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.util.Assert;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.filter.GenericFilterBean;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
-
-public class OAuth2LoginAuthenticationFilter extends GenericFilterBean {
+public class OAuth2LoginAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
 
     private static final String DEFAULT_LOGIN_REQUEST_BASE_URI = "/login/oauth2/code/";
 
     private final ClientRegistrationRepository clientRegistrationRepository;
-    private final OAuth2AuthorizedClientRepository authorizedClientRepository = new OAuth2AuthorizedClientRepository();
+
+    private final OAuth2AuthorizedClientRepository authorizedClientRepository;
+
     private final AuthorizationRequestRepository authorizationRequestRepository = new AuthorizationRequestRepository();
-    private Converter<OAuth2LoginAuthenticationToken, OAuth2AuthenticationToken> authenticationResultConverter = this::createAuthenticationResult;
 
-    private final AuthenticationManager authenticationManager;
-    private final HttpSessionSecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+    private final Converter<OAuth2LoginAuthenticationToken, OAuth2AuthenticationToken> authenticationResultConverter = this::createAuthenticationResult;
 
-    public OAuth2LoginAuthenticationFilter(ClientRegistrationRepository clientRegistrationRepository, OAuth2UserService oAuth2UserService) {
+    public OAuth2LoginAuthenticationFilter(ClientRegistrationRepository clientRegistrationRepository, OAuth2AuthorizedClientRepository authorizedClientRepository, AuthenticationManager authenticationManager) {
+        super(DEFAULT_LOGIN_REQUEST_BASE_URI, authenticationManager);
         this.clientRegistrationRepository = clientRegistrationRepository;
-        this.authenticationManager = new ProviderManager(
-                List.of(new OAuth2LoginAuthenticationProvider(oAuth2UserService))
-        );
+        this.authorizedClientRepository = authorizedClientRepository;
     }
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        doFilter((HttpServletRequest) request, (HttpServletResponse) response, chain);
-    }
-
-    private void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (!requiresAuthentication(request, response)) {
-            chain.doFilter(request, response);
-            return;
-        }
-        try {
-            Authentication authenticationResult = attemptAuthentication(request, response);
-            if (authenticationResult == null) {
-                return;
-            }
-            successfulAuthentication(request, response, chain, authenticationResult);
-        } catch (AuthenticationException ex) {
-            SecurityContextHolder.clearContext();
-        }
-    }
-
-    private Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
 
         // request에서 parameter를 가져오기
         MultiValueMap<String, String> params = OAuth2AuthorizationResponseUtils.toMultiMap(request.getParameterMap());
@@ -104,7 +67,7 @@ public class OAuth2LoginAuthenticationFilter extends GenericFilterBean {
                 new OAuth2AuthorizationExchange(authorizationRequest, authorizationResponse));
 
         // OAuth2LoginAuthenticationToken 만들기
-        OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) authenticationManager
+        OAuth2LoginAuthenticationToken authenticationResult = (OAuth2LoginAuthenticationToken) getAuthenticationManager()
                 .authenticate(authenticationRequest);
 
         // provider 인증 후 authenticated된 OAuth2AuthenticationToken 객체 가져오기
@@ -120,20 +83,6 @@ public class OAuth2LoginAuthenticationFilter extends GenericFilterBean {
         return oauth2Authentication;
     }
 
-    protected boolean requiresAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        String uri = request.getRequestURI();
-        return uri.startsWith(DEFAULT_LOGIN_REQUEST_BASE_URI);
-    }
-
-    private void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException {
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authResult);
-        SecurityContextHolder.setContext(context);
-        this.securityContextRepository.saveContext(context, request, response);
-
-        response.sendRedirect("/");
-    }
-
     private String extractRegistrationId(HttpServletRequest request) {
         String uri = request.getRequestURI();
 
@@ -146,7 +95,5 @@ public class OAuth2LoginAuthenticationFilter extends GenericFilterBean {
 
     private OAuth2AuthenticationToken createAuthenticationResult(OAuth2LoginAuthenticationToken authenticationResult) {
         return new OAuth2AuthenticationToken(authenticationResult.getPrincipal(), authenticationResult.getAuthorities());
-//        return new OAuth2AuthenticationToken(authenticationResult.getPrincipal(), authenticationResult.getAuthorities(),
-//                authenticationResult.getClientRegistration().getRegistrationId());
     }
 }

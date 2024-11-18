@@ -1,18 +1,19 @@
 package nextstep.app;
 
 import nextstep.oauth2.OAuth2ClientProperties;
+import nextstep.oauth2.authentication.OAuth2LoginAuthenticationProvider;
 import nextstep.oauth2.registration.ClientRegistration;
 import nextstep.oauth2.registration.ClientRegistrationRepository;
 import nextstep.oauth2.userinfo.OAuth2UserService;
 import nextstep.oauth2.web.OAuth2AuthorizationRequestRedirectFilter;
+import nextstep.oauth2.web.OAuth2AuthorizedClientRepository;
 import nextstep.oauth2.web.OAuth2LoginAuthenticationFilter;
 import nextstep.security.access.AnyRequestMatcher;
 import nextstep.security.access.MvcRequestMatcher;
 import nextstep.security.access.RequestMatcherEntry;
 import nextstep.security.access.hierarchicalroles.RoleHierarchy;
 import nextstep.security.access.hierarchicalroles.RoleHierarchyImpl;
-import nextstep.security.authentication.BasicAuthenticationFilter;
-import nextstep.security.authentication.UsernamePasswordAuthenticationFilter;
+import nextstep.security.authentication.*;
 import nextstep.security.authorization.*;
 import nextstep.security.config.DefaultSecurityFilterChain;
 import nextstep.security.config.DelegatingFilterProxy;
@@ -70,26 +71,33 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(List.of(
+                new DaoAuthenticationProvider(userDetailsService),
+                new OAuth2LoginAuthenticationProvider(oAuth2UserService)));
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain() {
         return new DefaultSecurityFilterChain(
                 List.of(
                         new SecurityContextHolderFilter(),
-                        new UsernamePasswordAuthenticationFilter(userDetailsService),
-                        new BasicAuthenticationFilter(userDetailsService),
+                        new UsernamePasswordAuthenticationFilter(authenticationManager()),
+                        new BasicAuthenticationFilter(authenticationManager()),
                         new OAuth2AuthorizationRequestRedirectFilter(clientRegistrationRepository()),
-                        new OAuth2LoginAuthenticationFilter(clientRegistrationRepository(), oAuth2UserService),
+                        new OAuth2LoginAuthenticationFilter(clientRegistrationRepository(), new OAuth2AuthorizedClientRepository(), authenticationManager()),
                         new AuthorizationFilter(requestAuthorizationManager())
                 )
         );
     }
 
     @Bean
-    public RequestAuthorizationManager requestAuthorizationManager() {
+    public RequestMatcherDelegatingAuthorizationManager requestAuthorizationManager() {
         List<RequestMatcherEntry<AuthorizationManager>> mappings = new ArrayList<>();
         mappings.add(new RequestMatcherEntry<>(new MvcRequestMatcher(HttpMethod.GET, "/members"), new AuthorityAuthorizationManager(roleHierarchy(), "ADMIN")));
         mappings.add(new RequestMatcherEntry<>(new MvcRequestMatcher(HttpMethod.GET, "/members/me"), new AuthorityAuthorizationManager(roleHierarchy(), "USER")));
         mappings.add(new RequestMatcherEntry<>(AnyRequestMatcher.INSTANCE, new PermitAllAuthorizationManager<Void>()));
-        return new RequestAuthorizationManager(mappings);
+        return new RequestMatcherDelegatingAuthorizationManager(mappings);
     }
 
     @Bean

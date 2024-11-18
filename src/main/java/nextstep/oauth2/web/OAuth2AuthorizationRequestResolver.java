@@ -1,13 +1,12 @@
 package nextstep.oauth2.web;
 
+import jakarta.servlet.http.HttpServletRequest;
 import nextstep.oauth2.endpoint.OAuth2AuthorizationRequest;
 import nextstep.oauth2.keygen.StateGenerator;
 import nextstep.oauth2.registration.ClientRegistration;
 import nextstep.oauth2.registration.ClientRegistrationRepository;
 import nextstep.security.authentication.AuthenticationException;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 public class OAuth2AuthorizationRequestResolver {
 
