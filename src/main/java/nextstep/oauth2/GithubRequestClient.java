@@ -10,7 +10,10 @@ import java.util.Map;
 public class GithubRequestClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
-    private final String GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
+    private final String GITHUB_TOKEN_URL = "http://localhost:8089/login/oauth/access_token";
+
+    private final String GITHUB_USER_URL = "http://localhost:8089/user";
+
     public String requestAccessToken(String code) {
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
@@ -24,11 +27,18 @@ public class GithubRequestClient {
         HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.exchange(GITHUB_TOKEN_URL, HttpMethod.POST, request, Map.class);
         return (String) response.getBody().get("access_token");
+    }
 
-        //client_id
-        //client_secret
-        //code
-        //redirect_uri
+
+    public Map<String, String> requestUserProfile(String accessToken){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<Map<String, String>> request = new HttpEntity<>(headers);
+        ResponseEntity<Map> response = restTemplate.exchange(GITHUB_USER_URL, HttpMethod.GET, request, Map.class);
+        return response.getBody();
+
 
     }
+
 }
