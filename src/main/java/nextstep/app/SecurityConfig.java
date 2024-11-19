@@ -2,8 +2,7 @@ package nextstep.app;
 
 import nextstep.app.domain.Member;
 import nextstep.app.domain.MemberRepository;
-import nextstep.oauth2.GithubAuthenticationFilter;
-import nextstep.oauth2.GithubLoginRedirectFilter;
+import nextstep.oauth2.*;
 import nextstep.security.access.AnyRequestMatcher;
 import nextstep.security.access.MvcRequestMatcher;
 import nextstep.security.access.RequestMatcherEntry;
@@ -20,6 +19,7 @@ import nextstep.security.config.SecurityFilterChain;
 import nextstep.security.context.SecurityContextHolderFilter;
 import nextstep.security.userdetails.UserDetails;
 import nextstep.security.userdetails.UserDetailsService;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -31,12 +31,16 @@ import java.util.Set;
 
 @EnableAspectJAutoProxy
 @Configuration
+@EnableConfigurationProperties(OAuth2ClientProperties.class)
 public class SecurityConfig {
 
     private final MemberRepository memberRepository;
+    private final OAuth2ClientProperties oAuth2ClientProperties;
 
-    public SecurityConfig(MemberRepository memberRepository) {
+
+    public SecurityConfig(MemberRepository memberRepository, OAuth2ClientProperties oAuth2ClientProperties) {
         this.memberRepository = memberRepository;
+        this.oAuth2ClientProperties = oAuth2ClientProperties;
     }
 
     @Bean
@@ -61,8 +65,8 @@ public class SecurityConfig {
                         new SecurityContextHolderFilter(),
                         new UsernamePasswordAuthenticationFilter(userDetailsService()),
                         new BasicAuthenticationFilter(userDetailsService()),
-                        new GithubLoginRedirectFilter(),
-                        new GithubAuthenticationFilter(),
+                        new OAuth2LoginRedirectFilter(oAuth2ClientProperties),
+                        new OAuth2AuthenticationFilter(oAuth2ClientProperties),
                         new AuthorizationFilter(requestAuthorizationManager())
                 )
         );
